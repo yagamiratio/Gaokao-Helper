@@ -30,7 +30,7 @@ window.DEFAULT_CONFIG = {
       provider: "deepseek",
       url: "https://api.deepseek.com/chat/completions",
       model: "deepseek-v4-flash",
-      key: "", // ← 在此填入您的 DeepSeek API Key
+      key: "sk-ec2aea22e530463db9062c8cac49ece6", // ← 在此填入您的 DeepSeek API Key
     },
   ],
 };
