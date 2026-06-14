@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考志愿顾问 · AI版</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+:root{
+  --bg:#0c0c0e;--bg2:#141416;--bg3:#1e1e22;--bg4:#28282e;
+  --border:#2c2c32;--border2:#38383f;
+  --y:#f5c518;--yd:rgba(245,197,24,0.1);--yb:rgba(245,197,24,0.18);
+  --text:#eeeef0;--t2:#8888a0;--t3:#505060;
+  --green:#4ade80;--red:#f87171;--blue:#60a5fa;
+  --ubg:#141c2e;--ubd:#1e2d4a;
+  --bbg:#181610;--bbd:#2e2a08;
+  --r:14px;--r2:10px;--r3:7px;
+  --font:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);display:flex;flex-direction:column;align-items:center;min-height:100vh;}
+
+/* ══ LAYOUT ══ */
+.app{display:flex;flex-direction:column;width:100%;max-width:820px;height:100vh;position:relative;}
+
+/* ══ HEADER ══ */
+.hd{padding:14px 18px 0;flex-shrink:0;}
+.hd-top{display:flex;align-items:center;gap:12px;}
+.av{width:40px;height:40px;border-radius:50%;background:var(--y);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#000;flex-shrink:0;box-shadow:0 0 0 2px rgba(245,197,24,0.25);}
+.hd-info h1{font-size:16px;font-weight:800;line-height:1.2;letter-spacing:-.01em;}
+.hd-info .sub{font-size:11px;color:var(--t2);margin-top:1px;}
+.tagline{font-size:12px;color:var(--y);font-weight:500;padding:5px 0 0 52px;min-height:18px;letter-spacing:.02em;}
+.hd-btns{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:border-color .15s,background .15s;flex-shrink:0;}
+.icon-btn:hover{border-color:var(--y);background:var(--yd);}
+.icon-btn svg{width:17px;height:17px;stroke:var(--t2);transition:stroke .15s;}
+.icon-btn:hover svg{stroke:var(--y);}
+.status-dot{width:6px;height:6px;border-radius:50%;position:absolute;top:5px;right:5px;background:var(--t3);}
+.status-dot.ok{background:var(--green);}
+.status-dot.err{background:var(--red);}
+
+/* ══ TOOLS BAR ══ */
+.tools-bar{margin:10px 18px 0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;display:none;}
+.tools-bar.open{display:block;}
+.tools-head{padding:10px 14px;font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.tools-head span{color:var(--y);}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border);}
+.tool-item{background:var(--bg2);padding:10px 13px;cursor:pointer;transition:background .12s;text-decoration:none;display:block;}
+.tool-item:hover{background:var(--bg3);}
+.tool-item .t-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.tool-item .t-desc{font-size:11px;color:var(--t2);line-height:1.4;}
+.tool-item .t-tag{font-size:10px;padding:1px 6px;border-radius:4px;background:var(--yd);color:var(--y);margin-top:4px;display:inline-block;}
+
+/* ══ DIVIDER ══ */
+.div{height:1px;background:var(--border);margin:10px 0 0;flex-shrink:0;}
+
+/* ══ STRATEGY PANEL ══ */
+.strategy-panel{margin:0 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;display:none;}
+.strategy-panel.open{display:block;}
+.sp-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.sp-head h3{font-size:13px;font-weight:700;}
+.sp-close{width:24px;height:24px;border:none;background:transparent;color:var(--t2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:4px;}
+.sp-close:hover{background:var(--bg3);color:var(--text);}
+.sp-body{padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.sp-tier{border-radius:var(--r3);padding:10px 12px;border:1px solid;}
+.sp-tier.chong{background:rgba(248,113,113,0.06);border-color:rgba(248,113,113,0.25);}
+.sp-tier.wen{background:rgba(245,197,24,0.06);border-color:rgba(245,197,24,0.25);}
+.sp-tier.bao{background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.25);}
+.sp-tier .tier-label{font-size:10px;font-weight:700;letter-spacing:.05em;margin-bottom:6px;}
+.sp-tier.chong .tier-label{color:var(--red);}
+.sp-tier.wen .tier-label{color:var(--y);}
+.sp-tier.bao .tier-label{color:var(--green);}
+.sp-tier .tier-schools{display:flex;flex-direction:column;gap:5px;}
+.school-tag{font-size:11px;padding:3px 8px;border-radius:5px;background:var(--bg3);color:var(--text);cursor:pointer;transition:background .12s;border:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.school-tag:hover{border-color:var(--y);color:var(--y);}
+.sp-empty{font-size:12px;color:var(--t3);text-align:center;padding:16px;grid-column:1/-1;}
+
+/* ══ CHAT ══ */
+.chat-wrap{flex:1;overflow-y:auto;padding:14px 18px 8px;display:flex;flex-direction:column;gap:14px;min-height:0;}
+.chat-wrap::-webkit-scrollbar{width:4px;}
+.chat-wrap::-webkit-scrollbar-track{background:transparent;}
+.chat-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.welcome{background:var(--yd);border:1px solid rgba(245,197,24,0.2);border-radius:var(--r);padding:14px 16px;font-size:13.5px;line-height:1.75;}
+.welcome strong{color:var(--y);}
+.tips{margin-top:10px;display:flex;flex-wrap:wrap;gap:7px;}
+.tip-chip{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--t2);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tip-chip:hover{border-color:var(--y);color:var(--y);background:var(--yd);}
+
+.msg{display:flex;gap:9px;align-items:flex-start;}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px;}
+.msg.bot .msg-av{background:var(--y);color:#000;}
+.msg.user .msg-av{background:#1a243a;color:#7aadff;}
+.bubble{max-width:calc(100% - 66px);padding:10px 14px;border-radius:var(--r);font-size:13.5px;line-height:1.78;word-break:break-word;}
+.msg.bot .bubble{background:var(--bbg);border:1px solid var(--bbd);border-top-left-radius:4px;}
+.msg.user .bubble{background:var(--ubg);border:1px solid var(--ubd);border-top-right-radius:4px;color:#c5d6ff;}
+.bubble p{margin-bottom:7px;}.bubble p:last-child{margin-bottom:0;}
+.bubble strong{color:var(--y);font-weight:700;}
+.bubble em{color:var(--t2);font-style:normal;font-size:12px;}
+
+/* clickable entity chips in bubbles */
+.entity-chip{display:inline-flex;align-items:center;gap:3px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:1px 7px;font-size:12px;cursor:pointer;color:var(--y);transition:all .13s;white-space:nowrap;margin:1px 2px;}
+.entity-chip:hover{background:var(--yd);border-color:var(--y);}
+.entity-chip::before{content:'🔍';font-size:10px;}
+
+/* typing */
+.typing-wrap{display:flex;gap:9px;align-items:flex-start;}
+.typing-bubble{background:var(--bbg);border:1px solid var(--bbd);border-radius:var(--r);border-top-left-radius:4px;padding:12px 16px;display:flex;gap:5px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--y);opacity:.4;animation:bounce 1.2s infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4;}40%{transform:translateY(-6px);opacity:1;}}
+
+/* ══ INPUT ══ */
+.input-area{flex-shrink:0;padding:8px 18px 16px;background:var(--bg);border-top:1px solid var(--border);}
+.input-row{display:flex;gap:9px;align-items:flex-end;}
+.input-wrap{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);transition:border .15s;display:flex;align-items:flex-end;}
+.input-wrap:focus-within{border-color:var(--y);}
+textarea{flex:1;resize:none;background:transparent;border:none;outline:none;color:var(--text);font-size:13.5px;font-family:var(--font);padding:10px 12px;min-height:42px;max-height:120px;line-height:1.6;}
+textarea::placeholder{color:var(--t3);}
+.send-btn{width:40px;height:40px;margin:4px;background:var(--y);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s;}
+.send-btn:hover{opacity:.85;}.send-btn:active{transform:scale(.92);}
+.send-btn:disabled{opacity:.3;cursor:not-allowed;}
+.send-btn svg{width:16px;height:16px;}
+.input-hint{font-size:11px;color:var(--t3);margin-top:5px;text-align:center;}
+
+/* ══ MODAL ══ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:18px;width:min(500px,95vw);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;transform:translateY(14px);transition:transform .2s;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-hd{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-hd h2{font-size:15px;font-weight:700;}
+.m-close{width:28px;height:28px;border:none;background:var(--bg3);border-radius:6px;cursor:pointer;color:var(--t2);font-size:17px;display:flex;align-items:center;justify-content:center;}
+.m-close:hover{background:var(--border);color:var(--text);}
+.modal-body{padding:18px 20px;overflow-y:auto;}
+.modal-ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;}
+
+/* provider tabs */
+.ptabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.ptab{padding:6px 13px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);font-size:12px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:5px;}
+.ptab:hover{border-color:var(--y);color:var(--y);}
+.ptab.active{border-color:var(--y);background:var(--yd);color:var(--y);}
+.pdot{width:6px;height:6px;border-radius:50%;background:var(--border2);}
+.ptab.active .pdot,.ptab.saved .pdot{background:var(--y);}
+.prov-panel{display:none;}.prov-panel.active{display:block;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:12px;color:var(--t2);margin-bottom:4px;font-weight:600;}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;font-family:var(--mono);outline:none;transition:border .13s;}
+.field select{font-family:var(--font);cursor:pointer;}
+.field input:focus,.field select:focus{border-color:var(--y);}
+.field input::placeholder{color:var(--t3);}
+.fhint{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.5;}
+.fhint a{color:var(--y);text-decoration:none;}.fhint a:hover{text-decoration:underline;}
+.btn-save{background:var(--y);color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .13s;}
+.btn-save:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;transition:all .13s;}
+.btn-ghost:hover{border-color:var(--red);color:var(--red);}
+
+/* ══ DETAIL MODAL ══ */
+.detail-modal{max-width:min(560px,95vw);}
+.detail-section{margin-bottom:14px;}
+.detail-section h4{font-size:12px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.dtag{font-size:12px;padding:3px 10px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text);}
+.dtag.good{border-color:rgba(74,222,128,0.3);color:var(--green);}
+.dtag.bad{border-color:rgba(248,113,113,0.3);color:var(--red);}
+.detail-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:7px;margin-top:8px;}
+.dlink{padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;text-decoration:none;transition:border-color .13s,background .13s;display:block;}
+.dlink:hover{border-color:var(--y);background:var(--yd);}
+.dlink .dl-name{font-size:12px;font-weight:600;color:var(--text);}
+.dlink .dl-url{font-size:10px;color:var(--t3);margin-top:1px;}
+.score-bar{margin-top:8px;}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.score-label{font-size:11px;color:var(--t2);width:40px;flex-shrink:0;}
+.score-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.score-fill{height:100%;border-radius:3px;background:var(--y);transition:width .6s;}
+.score-val{font-size:11px;color:var(--y);width:30px;text-align:right;flex-shrink:0;}
+.loading-spin{display:flex;align-items:center;justify-content:center;padding:24px;gap:8px;color:var(--t2);font-size:13px;}
+.spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-inline{font-size:12px;color:var(--red);padding:5px 9px;background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.2);border-radius:6px;margin-top:8px;}
+
+@media(max-width:540px){
+  .app{max-width:100%;}
+  .hd,.tools-bar,.strategy-panel{padding-left:14px;padding-right:14px;}
+  .chat-wrap{padding:12px 14px 6px;}
+  .input-area{padding:7px 14px 14px;}
+  .sp-body{grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .sp-tier{padding:8px 9px;}
+  .bubble{max-width:calc(100% - 48px);}
+}
+/* mode switch */
+.mode-switch{display:flex;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:14px;border:1px solid var(--border);}
+.mode-opt{flex:1;text-align:center;padding:7px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--t2);transition:all .15s;}
+.mode-opt.active{background:var(--y);color:#000;}
+.mode-opt:not(.active):hover{color:var(--text);}
+.default-model-panel{display:none;}
+.default-model-panel.active{display:block;}
+.default-model-list{display:flex;flex-direction:column;gap:8px;}
+.default-model-item{padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;transition:all .12s;display:flex;align-items:center;gap:10px;}
+.default-model-item:hover{border-color:var(--y);background:var(--yd);}
+.default-model-item.selected{border-color:var(--y);background:var(--yb);}
+.default-model-item .dm-radio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.default-model-item.selected .dm-radio{border-color:var(--y);}
+.default-model-item.selected .dm-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--y);}
+.default-model-item .dm-info{flex:1;}
+.default-model-item .dm-name{font-size:13px;font-weight:600;color:var(--text);}
+.default-model-item .dm-desc{font-size:11px;color:var(--t2);margin-top:2px;}
+.default-model-item .dm-tag{font-size:10px;padding:2px 7px;border-radius:4px;background:var(--yd);color:var(--y);}
+.no-defaults-msg{padding:20px;text-align:center;color:var(--t2);font-size:13px;}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ HEADER ══ -->
+<div class="hd">
+  <div class="hd-top">
+    <div class="av">志</div>
+    <div class="hd-info">
+      <h1>高考志愿顾问 · AI版</h1>
+      <div class="sub">专业志愿分析 · 数据驱动决策 · 仅供参考</div>
+    </div>
+    <div class="hd-btns">
+      <!-- 工具导航 -->
+      <button class="icon-btn" id="toolsBtn" onclick="toggleTools()" title="高考工具与官方网站">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+      <!-- 策略分析 -->
+      <button class="icon-btn" id="stratBtn" onclick="toggleStrategy()" title="志愿策略分析">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </button>
+      <!-- 设置 -->
+      <button class="icon-btn" onclick="openModal('cfg')" title="模型配置">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <div class="status-dot" id="statusDot"></div>
+      </button>
+    </div>
+  </div>
+  <div class="tagline" id="tagline"></div>
+</div>
+
+<!-- ══ TOOLS BAR ══ -->
+<div class="tools-bar" id="toolsBar">
+  <div class="tools-head">官方工具 & 数据来源 <span>点击直接跳转</span></div>
+  <div class="tools-grid">
+    <a class="tool-item" href="https://gaokao.chsi.com.cn" target="_blank">
+      <div class="t-name">阳光高考</div>
+      <div class="t-desc">教育部官方，招生章程、院校查询、录取查询</div>
+      <span class="t-tag">教育部直属</span>
+    </a>
+    <a class="tool-item" href="https://www.chsi.com.cn" target="_blank">
+      <div class="t-name">学信网</div>
+      <div class="t-desc">学籍查询、录取结果、学历认证</div>
+      <span class="t-tag">官方认证</span>
+    </a>
+    <a class="tool-item" href="https://www.gaokao.cn" target="_blank">
+      <div class="t-name">掌上高考</div>
+      <div class="t-desc">教育部官方App网页版，志愿推荐、分数线</div>
+      <span class="t-tag">教育部App</span>
+    </a>
+    <a class="tool-item" href="https://www.eol.cn" target="_blank">
+      <div class="t-name">中国教育在线</div>
+      <div class="t-desc">高考分数线、历年录取数据、志愿辅助</div>
+      <span class="t-tag">权威媒体</span>
+    </a>
+    <a class="tool-item" href="https://www.hao.chsi.com.cn" target="_blank">
+      <div class="t-name">高考院校库</div>
+      <div class="t-desc">全国院校信息、专业设置、就业数据</div>
+      <span class="t-tag">阳光高考</span>
+    </a>
+    <a class="tool-item" href="https://gkcx.eol.cn" target="_blank">
+      <div class="t-name">高考成绩查询</div>
+      <div class="t-desc">各省历年录取分数线对比查询</div>
+      <span class="t-tag">数据查询</span>
+    </a>
+    <a class="tool-item" href="https://www.moe.gov.cn" target="_blank">
+      <div class="t-name">教育部官网</div>
+      <div class="t-desc">招生政策、考试改革、权威通知公告</div>
+      <span class="t-tag">最权威</span>
+    </a>
+    <a class="tool-item" href="https://yz.chsi.com.cn" target="_blank">
+      <div class="t-name">研招网</div>
+      <div class="t-desc">考研报名、招生简章、分数线查询</div>
+      <span class="t-tag">考研必备</span>
+    </a>
+  </div>
+</div>
+
+<div class="div"></div>
+
+<!-- ══ STRATEGY PANEL ══ -->
+<div class="strategy-panel" id="strategyPanel">
+  <div class="sp-head">
+    <h3>📊 志愿策略分析 · 冲稳保</h3>
+    <button class="sp-close" onclick="toggleStrategy()">×</button>
+  </div>
+  <div class="sp-body" id="spBody">
+    <div class="sp-empty">💬 先和我聊聊你的分数和意向，我会自动整理推荐院校到这里</div>
+  </div>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div class="chat-wrap" id="chatWrap">
+  <div class="welcome">
+    <strong>本工具基于资深志愿填报顾问思维框架构建，AI辅助分析，数据以各省官方公布为准，仅供参考。</strong><br><br>
+    我跟你说，填志愿这件事，信息差就是钱差。普通家庭的孩子，选错一个专业，可能影响十年。你把情况跟我说清楚，我帮你分析。<br><br>
+    💡 <em>回答里出现的院校名称会变成</em> <span class="entity-chip" style="cursor:default">可点击标签</span><em>，点击可查看详情和官网。</em>
+    <div class="tips">
+      <span class="tip-chip" onclick="sendQ(this)">河南理科560分能上哪些大学？</span>
+      <span class="tip-chip" onclick="sendQ(this)">计算机专业现在值得报吗？</span>
+      <span class="tip-chip" onclick="sendQ(this)">天坑专业有哪些怎么避？</span>
+      <span class="tip-chip" onclick="sendQ(this)">文科500分想留在广东</span>
+      <span class="tip-chip" onclick="sendQ(this)">双非一本值不值得考研？</span>
+      <span class="tip-chip" onclick="sendQ(this)">帮我做一个完整的志愿策略分析</span>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <div class="input-wrap">
+      <textarea id="inp" placeholder="输入你的省份、分数、文理科、偏好方向……按 Enter 发送，Shift+Enter 换行" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="发送">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <div class="input-hint">数据来源：阳光高考 · 各省教育考试院 · 仅供参考，以官方公布为准</div>
+</div>
+
+<!-- ══ CFG MODAL ══ -->
+<div class="overlay" id="cfgOverlay" onclick="overlayClick(event,'cfgOverlay')">
+<div class="modal">
+  <div class="modal-hd"><h2>⚙️ 模型配置</h2><button class="m-close" onclick="closeModal('cfgOverlay')">×</button></div>
+  <div class="modal-body">
+    <!-- 模式切换 -->
+    <div class="mode-switch" id="modeSwitch">
+      <div class="mode-opt active" data-mode="default" onclick="switchMode('default',this)">使用网站默认模型</div>
+      <div class="mode-opt" data-mode="custom" onclick="switchMode('custom',this)">自定义 API</div>
+    </div>
+    <!-- 默认模型面板 -->
+    <div class="default-model-panel active" id="defaultModelPanel">
+      <div id="defaultModelList" class="default-model-list"></div>
+    </div>
+    <!-- 自定义 API 面板 -->
+    <div class="custom-api-panel" id="customApiPanel">
+      <div class="ptabs" id="ptabs">
+        <div class="ptab active" data-p="deepseek" onclick="switchP('deepseek',this)"><span class="pdot"></span>DeepSeek</div>
+        <div class="ptab" data-p="qwen" onclick="switchP('qwen',this)"><span class="pdot"></span>通义千问</div>
+        <div class="ptab" data-p="doubao" onclick="switchP('doubao',this)"><span class="pdot"></span>豆包</div>
+        <div class="ptab" data-p="custom" onclick="switchP('custom',this)"><span class="pdot"></span>自定义</div>
+      </div>
+      <div class="prov-panel active" id="pp-deepseek">
+        <div class="field"><label>API Key</label><input type="password" id="ds-k" placeholder="sk-xxxxxxxxxxxxxxxx"><div class="fhint">去 <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com</a> 获取。</div></div>
+        <div class="field"><label>模型</label><select id="ds-m"><option value="deepseek-chat">deepseek-chat（V3，推荐）</option><option value="deepseek-reasoner">deepseek-reasoner（R1，更强更慢）</option></select></div>
+      </div>
+      <div class="prov-panel" id="pp-qwen">
+        <div class="field"><label>API Key</label><input type="password" id="qw-k" placeholder="sk-xxxxxxxxxxxxxxxx"><div class="fhint">去 <a href="https://bailian.console.aliyun.com/" target="_blank">阿里云百炼控制台</a> 获取。</div></div>
+        <div class="field"><label>模型</label><select id="qw-m"><option value="qwen-plus">qwen-plus（推荐）</option><option value="qwen-turbo">qwen-turbo（最快）</option><option value="qwen-max">qwen-max（最强）</option></select></div>
+      </div>
+      <div class="prov-panel" id="pp-doubao">
+        <div class="field"><label>API Key</label><input type="password" id="db-k" placeholder=""><div class="fhint">去 <a href="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey" target="_blank">火山引擎方舟控制台</a> 获取。</div></div>
+        <div class="field"><label>模型 / 接入点ID</label><select id="db-m"><option value="doubao-pro-32k">doubao-pro-32k（推荐）</option><option value="doubao-pro-128k">doubao-pro-128k（长上下文）</option><option value="doubao-lite-32k">doubao-lite-32k（最省）</option></select></div>
+      </div>
+      <div class="prov-panel" id="pp-custom">
+        <div class="field"><label>API Base URL（OpenAI 兼容）</label><input type="text" id="cu-u" placeholder="https://api.example.com/v1"><div class="fhint">任何兼容 OpenAI /v1/chat/completions 接口均可。</div></div>
+        <div class="field"><label>API Key</label><input type="password" id="cu-k" placeholder="sk-..."></div>
+        <div class="field"><label>Model 名称</label><input type="text" id="cu-m" placeholder="gpt-4o / moonshot-v1-8k / …"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn-ghost" onclick="clearCfg()">清除配置</button>
+    <button class="btn-save" onclick="saveCfg()">保存并使用</button>
+  </div>
+</div>
+</div><!-- ══ DETAIL MODAL ══ -->
+<div class="overlay" id="detailOverlay" onclick="overlayClick(event,'detailOverlay')">
+<div class="modal detail-modal">
+  <div class="modal-hd"><h2 id="detailTitle">院校详情</h2><button class="m-close" onclick="closeModal('detailOverlay')">×</button></div>
+  <div class="modal-body" id="detailBody"><div class="loading-spin"><div class="spinner"></div>AI 正在查询中…</div></div>
+  <div class="modal-ft"><button class="btn-save" onclick="closeModal('detailOverlay')">关闭</button></div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  SYSTEM PROMPT
+// ════════════════════════════════════════════════════════════
+const SYS = `你是一位资深高考志愿填报顾问，拥有十余年一线咨询经验，帮助数万普通家庭的孩子完成志愿决策。你说话直接、务实、不说废话，只讲数据和结论。
+
+【声明】仅首次对话开头说一次：「本工具为AI辅助分析，数据仅供参考，以各省官方公布为准。」
+
+# 核心工作流程
+
+## Step 1：主动挖掘信息
+若用户信息不完整，用直接的聊天口吻一次性追问：
+省份（必须）、高考分数（必须）、文理科/新高考选科（必须）、偏好城市、感兴趣专业方向、家庭背景（父母职业，有无行业资源）。
+
+## Step 2：基于知识分析
+结合以下权威来源分析（引用数据时注明"参考近年数据，请以各省官方公布为准"）：
+- 阳光高考（gaokao.chsi.com.cn）：教育部直属，招生章程、批次线
+- 各省教育考试院官网：一分一段表
+- 近年录取分数趋势
+
+## Step 3：输出（固定结构）
+
+【形势判断】这个分数在本省的竞争位置，直接说结论。
+
+【专业建议】基于就业数据给明确判断，列出推荐和避坑方向。涉及具体专业时必须包含以下两项：
+- 毕业出路：中间50%的普通毕业生实际去哪了？具体岗位、薪资区间、体制内外比例。不说"前景广阔"这种废话，说具体数字和去向。
+- AI冲击评估：这个专业/行业未来5-10年被AI替代的风险程度（高/中/低），哪些岗位先消失，哪些反而因AI更值钱，普通人该怎么提前卡位。
+
+【院校推荐·冲稳保】
+冲：[院校名]（参考线约XXX分，专业：XXX）
+稳：[院校名]（参考线约XXX分，专业：XXX）
+保：[院校名]（参考线约XXX分，专业：XXX）
+
+【顾问结论】一句话金句总结，直接给判断。
+
+# 重要格式要求
+- 院校名必须用【】包裹，例如：【北京航空航天大学】，方便系统识别
+- 专业名也用【】包裹，例如：【计算机科学与技术】
+- 这样用户可以点击查看详情
+
+# 防重复规则
+已推荐过的院校绝对不重复；每轮最多3所；超6所后切换为深度分析模式。
+
+# 表达风格
+直接，快节奏，信息密度高。「我跟你说」「你听我说」开头。大量反问句制造压迫感。「千万别」「一定要」「没有之一」。禁止「或许」「可能」「这取决于个人情况」。给明确判断，不留灰色地带。说话像东北大哥，不绕弯子，直接给结论。
+
+# 核心分析理论
+社会筛子论（学历是最低成本的筛选工具）、就业倒推法（看中间50%毕业生去哪，不看顶尖案例）、理工选专业文科选学校、城市优先原则、阶层现实主义（家里没资源别谈纯兴趣，先谋生再谋爱）。
+
+# AI冲击分析框架（每次涉及专业必须评估）
+- 高危（AI 3-5年内大规模替代）：翻译、基础会计、客服、数据录入类、基础法务、部分新闻写作
+- 中危（AI改变工作方式但人仍需要）：设计、编程、教学、医疗影像、金融分析
+- 低危（AI难替代或反而需求增加）：护理、施工、复杂手术、AI训练/维护、心理咨询、高端法律
+- 核心判断标准：岗位是否需要"身体在场"+"复杂判断"+"情感连接"，三者占得越多越安全
+- 对普通家庭的建议：不是逃开AI，而是选能"用AI"的方向，而不是"被AI用"的岗位`;
+
+// 详情查询 prompt
+const DETAIL_SYS = `你是一个高考志愿信息助手，风格直接务实，提供精准客观的院校和专业介绍。回答结构清晰，数据引用标注"参考近年数据，以官方公布为准"。涉及专业时必须包含：毕业后实际出路（具体岗位+薪资区间）、AI对该专业的冲击评估（替代风险高/中/低，哪些方向反而因AI升值）。说话直接，给明确判断，不留灰色地带。`;
+
+// ════════════════════════════════════════════════════════════
+//  PROVIDERS
+// ════════════════════════════════════════════════════════════
+const PROVS = {
+  deepseek:{url:'https://api.deepseek.com/chat/completions',kf:'ds-k',mf:'ds-m',sk:'cfg_ds'},
+  qwen:{url:'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',kf:'qw-k',mf:'qw-m',sk:'cfg_qw'},
+  doubao:{url:'https://ark.cn-beijing.volces.com/api/v3/chat/completions',kf:'db-k',mf:'db-m',sk:'cfg_db'},
+  custom:{url:null,kf:'cu-k',mf:'cu-m',sk:'cfg_cu'},
+};
+let activeP='deepseek';
+
+function getCfg(){
+  const mode = localStorage.getItem('cfg_mode') || 'custom';
+  if(mode === 'default'){
+    const sid = localStorage.getItem('cfg_default_id');
+    if(!window.DEFAULT_CONFIG || !window.DEFAULT_CONFIG.enabled || !sid) return null;
+    const m = window.DEFAULT_CONFIG.models.find(x => x.id === sid);
+    if(!m || !m.key) return null;
+    return {provider:m.provider, key:m.key, model:m.model, url:m.url, _mode:'default', _modelId:m.id};
+  }
+  const s=localStorage.getItem('active_cfg');
+  return s?JSON.parse(s):null;
+}
+
+function saveCfg(){
+  const mode = document.querySelector('.mode-opt.active').getAttribute('data-mode');
+  if(mode === 'default'){
+    const sel = document.querySelector('.default-model-item.selected');
+    if(!sel){ alert('请选择一个默认模型'); return; }
+    const id = sel.getAttribute('data-id');
+    localStorage.setItem('cfg_mode', 'default');
+    localStorage.setItem('cfg_default_id', id);
+    localStorage.removeItem('active_cfg');
+    document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('saved'));
+    updateDot(true); closeModal('cfgOverlay');
+    return;
+  }
+  localStorage.setItem('cfg_mode', 'custom');
+  localStorage.removeItem('cfg_default_id');
+  const p=PROVS[activeP];
+  let key=document.getElementById(p.kf).value.trim();
+  if(key.includes('●')){const prev=localStorage.getItem(p.sk);key=prev?JSON.parse(prev).key:'';}
+  const mEl=document.getElementById(p.mf);
+  const model=mEl.value.trim();
+  if(!key){alert('请填写 API Key');return;}
+  if(!model){alert('请填写模型名称');return;}
+  let url=p.url;
+  if(activeP==='custom'){
+    url=document.getElementById('cu-u').value.trim().replace(/\/$/,'')+'/chat/completions';
+    if(!url.startsWith('http')){alert('请填写正确的 API Base URL');return;}
+    localStorage.setItem(p.sk,JSON.stringify({key,model,url}));
+  } else {
+    localStorage.setItem(p.sk,JSON.stringify({key,model}));
+  }
+  localStorage.setItem('active_cfg',JSON.stringify({provider:activeP,key,model,url:url||p.url}));
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('saved'));
+  document.querySelector('[data-p="'+activeP+'"]').classList.add('saved');
+  updateDot(true);closeModal('cfgOverlay');
+}
+function clearCfg(){
+  if(!confirm('确认清除？'))return;
+  Object.values(PROVS).forEach(p=>localStorage.removeItem(p.sk));
+  localStorage.removeItem('active_cfg');
+  localStorage.removeItem('cfg_mode');
+  localStorage.removeItem('cfg_default_id');
+  ['ds-k','qw-k','db-k','cu-k','cu-u'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('saved'));
+  updateDot(false);
+}
+function switchP(id,el){
+  activeP=id;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.prov-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pp-'+id).classList.add('active');
+}
+function switchMode(mode, el){
+  document.querySelectorAll('.mode-opt').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('defaultModelPanel').classList.toggle('active', mode==='default');
+  document.getElementById('customApiPanel').classList.toggle('active', mode==='custom');
+}
+function renderDefaultModels(){
+  const container = document.getElementById('defaultModelList');
+  if(!container) return;
+  if(!window.DEFAULT_CONFIG || !window.DEFAULT_CONFIG.enabled || !window.DEFAULT_CONFIG.models.length){
+    container.innerHTML = '<div class="no-defaults-msg">网站暂未配置默认模型，请切换到「自定义 API」并填入你的 API Key</div>';
+    return;
+  }
+  const savedId = localStorage.getItem('cfg_default_id');
+  let itemsHtml = '';
+  for(const m of window.DEFAULT_CONFIG.models){
+    const dsUrl = m.url || '';
+    const dsShort = dsUrl.replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+    const hasKey = !!m.key;
+    const selected = savedId === m.id ? ' selected' : '';
+    const tagHtml = hasKey
+      ? '<span class="dm-tag">即用</span>'
+      : '<span class="dm-tag" style="background:rgba(248,113,113,0.15);color:var(--red);">需配置</span>';
+    itemsHtml += '<div class="default-model-item'+selected+'" data-id="'+m.id+'" onclick="selectDefaultModel(this)">';
+    itemsHtml += '<div class="dm-radio"></div>';
+    itemsHtml += '<div class="dm-info"><div class="dm-name">'+m.name+'</div>';
+    itemsHtml += '<div class="dm-desc">'+m.model+' · '+dsShort+(hasKey?' ✓ 已配置':' ⚠ 未配置 API Key')+'</div></div>';
+    itemsHtml += tagHtml;
+    itemsHtml += '</div>';
+  }
+  container.innerHTML = itemsHtml;
+}
+function selectDefaultModel(el){
+  document.querySelectorAll('.default-model-item').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function loadCfgIntoModal(){
+  Object.entries(PROVS).forEach(([id,p])=>{
+    const raw=localStorage.getItem(p.sk);if(!raw)return;
+    const d=JSON.parse(raw);
+    const ke=document.getElementById(p.kf);const me=document.getElementById(p.mf);
+    if(ke&&d.key)ke.value='●'.repeat(Math.min(d.key.length,20));
+    if(me&&d.model)me.value=d.model;
+    if(id==='custom'&&d.url){const u=document.getElementById('cu-u');if(u)u.value=d.url.replace('/chat/completions','');}
+    document.querySelector('[data-p="'+id+'"]').classList.add('saved');
+  });
+  const mode = localStorage.getItem('cfg_mode') || 'custom';
+  const modeEl = document.querySelector('.mode-opt[data-mode="'+mode+'"]');
+  if(modeEl) switchMode(mode, modeEl);
+  renderDefaultModels();
+  if(mode === 'custom'){
+    const cfg=getCfg();
+    if(cfg){const el=document.querySelector('[data-p="'+cfg.provider+'"]');if(el)switchP(cfg.provider,el);}
+  }
+}
+function updateDot(ok){document.getElementById('statusDot').className='status-dot '+(ok?'ok':'err');}
+
+// ════════════════════════════════════════════════════════════
+//  MODAL helpers
+// ════════════════════════════════════════════════════════════
+function openModal(id){
+  if(id==='cfg')loadCfgIntoModal();
+  document.getElementById(id==='cfg'?'cfgOverlay':'detailOverlay').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function overlayClick(e,id){if(e.target.id===id)closeModal(id);}
+
+// ════════════════════════════════════════════════════════════
+//  PANELS
+// ════════════════════════════════════════════════════════════
+function toggleTools(){
+  const b=document.getElementById('toolsBar');
+  b.classList.toggle('open');
+}
+function toggleStrategy(){
+  const p=document.getElementById('strategyPanel');
+  p.classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════════════
+//  STRATEGY PANEL  – parse 冲稳保 from AI text
+// ════════════════════════════════════════════════════════════
+let strategy={chong:[],wen:[],bao:[]};
+
+function parseStrategy(text){
+  // 找冲稳保段落
+  const chongM=text.match(/冲[：:]\s*([^\n]+)/);
+  const wenM=text.match(/稳[：:]\s*([^\n]+)/);
+  const baoM=text.match(/保[：:]\s*([^\n]+)/);
+  function extractName(s){const m=s.match(/【([^】]+)】/);return m?m[1]:s.split('（')[0].trim().slice(0,20);}
+  if(chongM) strategy.chong.push(extractName(chongM[1]));
+  if(wenM) strategy.wen.push(extractName(wenM[1]));
+  if(baoM) strategy.bao.push(extractName(baoM[1]));
+  renderStrategy();
+}
+
+function renderStrategy(){
+  const b=document.getElementById('spBody');
+  if(!strategy.chong.length&&!strategy.wen.length&&!strategy.bao.length){return;}
+  const tier=(label,cls,items)=>{
+    if(!items.length)return`<div class="sp-tier ${cls}"><div class="tier-label">${label}</div><div class="tier-schools"><div style="font-size:11px;color:var(--t3)">暂无推荐</div></div></div>`;
+    const tags=items.map(s=>`<div class="school-tag" onclick="showDetail('${s}','学校')">${s}</div>`).join('');
+    return`<div class="sp-tier ${cls}"><div class="tier-label">${label}</div><div class="tier-schools">${tags}</div></div>`;
+  };
+  b.innerHTML=tier('冲 · 有挑战','chong',strategy.chong)+tier('稳 · 把握大','wen',strategy.wen)+tier('保 · 兜底','bao',strategy.bao);
+  document.getElementById('strategyPanel').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+//  ENTITY DETECTION  – wrap 【】 in clickable chips
+// ════════════════════════════════════════════════════════════
+function wrapEntities(html){
+  // 替换 【院校名】 或 【专业名】 为可点击 chip
+  return html.replace(/【([^】]{2,20})】/g,(match,name)=>{
+    const type=isSchool(name)?'学校':'专业';
+    return`<span class="entity-chip" onclick="showDetail('${escHtml(name)}','${type}')">${escHtml(name)}</span>`;
+  });
+}
+function isSchool(name){
+  return/(大学|学院|学校|理工|师范|交通|航空|航天|科技|财经|医科|农业|林业|外语|政法|传媒|美术|音乐|体育|建筑|地质|石油|矿业|电力|邮电|民族)/.test(name);
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ════════════════════════════════════════════════════════════
+//  DETAIL QUERY
+// ════════════════════════════════════════════════════════════
+async function showDetail(name,type){
+  document.getElementById('detailTitle').textContent=(type==='学校'?'🏫 ':'📚 ')+name;
+  document.getElementById('detailBody').innerHTML='<div class="loading-spin"><div class="spinner"></div>AI 正在查询中…</div>';
+  openModal('detail');
+
+  const cfg=getCfg();
+  if(!cfg?.key){
+    document.getElementById('detailBody').innerHTML='<div class="error-inline">请先配置 API Key（右上角设置）</div>';
+    return;
+  }
+
+  const prompt=type==='学校'
+    ?`请介绍【${name}】，包含以下结构，简洁精准：
+
+**基本信息**
+地点、院校层次（985/211/双一流/普通本科）、优势学科门类。
+
+**优势专业**
+列3-5个，每个标注：① 就业方向 ② 参考薪资区间 ③ AI冲击风险（高/中/低）。
+
+**毕业生实际去向**
+中间50%的普通毕业生去哪了？体制内比例、企业类型、城市分布。不要说"就业前景广阔"，说具体数字。
+
+**注意事项 / 避坑**
+真实槽点，不要替学校说好话。
+
+**分数线参考**
+近年不同省份录取区间，注明"参考数据，以官方公布为准"。
+
+**官方网址**
+招生网址直接列出。
+
+格式：小标题清晰，内容直接，数据标注仅供参考。`
+    :`请介绍【${name}】专业，包含以下结构，风格直接务实：
+
+**专业是干什么的**
+一句话说清楚，别废话。核心课程列3-5门。
+
+**毕业后实际出路**
+具体岗位名称（不是泛泛"相关行业"）、薪资区间（参考数据）、体制内机会、考研/留学必要性。重点说中间50%普通毕业生的真实去向。
+
+**AI冲击评估**
+- 替代风险：高/中/低，说明理由
+- 哪些细分方向最先被AI替代？
+- 哪些方向因为AI反而更值钱？
+- 普通家庭的孩子现在该怎么卡位？
+
+**适合人群**
+什么样的孩子适合，什么样的别来。
+
+**顾问点评**
+用第一人称，直接说推不推荐，为什么，别含糊。
+
+**报这个专业，学校怎么选？**
+哪类学校的这个专业最值，哪类不值得报。
+
+格式：清晰小标题，内容直接，给明确判断，数据注明仅供参考。`;
+
+  try{
+    const res=await callAPI(cfg,[{role:'user',content:prompt}],DETAIL_SYS,800);
+    document.getElementById('detailBody').innerHTML=wrapEntities(mdToHtml(res));
+  }catch(e){
+    document.getElementById('detailBody').innerHTML=`<div class="error-inline">查询失败：${e.message}</div>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  API CALL
+// ════════════════════════════════════════════════════════════
+async function callAPI(cfg,messages,sys,maxTokens=1500){
+  const res=await fetch(cfg.url,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},
+    body:JSON.stringify({model:cfg.model,messages:[{role:'system',content:sys},...messages],temperature:0.85,max_tokens:maxTokens,stream:false})
+  });
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status);}
+  const d=await res.json();
+  return d.choices?.[0]?.message?.content||'';
+}
+
+// ════════════════════════════════════════════════════════════
+//  CHAT
+// ════════════════════════════════════════════════════════════
+let history=[];
+
+function mdToHtml(t){
+  if(!t)return'';
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^#{1,3}\s+(.+)$/gm,'<strong>$1</strong>')
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+function appendMsg(role,text){
+  const wrap=document.getElementById('chatWrap');
+  const div=document.createElement('div');div.className='msg '+role;
+  const av=document.createElement('div');av.className='msg-av';av.textContent=role==='bot'?'顾':'我';
+  const bub=document.createElement('div');bub.className='bubble';
+  const html=wrapEntities(mdToHtml(text));
+  bub.innerHTML=html;
+  div.appendChild(av);div.appendChild(bub);
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+}
+
+function showTyping(){
+  const wrap=document.getElementById('chatWrap');
+  const div=document.createElement('div');div.className='typing-wrap';div.id='typing';
+  const av=document.createElement('div');av.className='msg-av';av.style.cssText='width:28px;height:28px;border-radius:50%;background:var(--y);color:#000;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px;flex-shrink:0;';av.textContent='顾';
+  const bub=document.createElement('div');bub.className='typing-bubble';
+  bub.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  div.appendChild(av);div.appendChild(bub);
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+}
+function removeTyping(){const e=document.getElementById('typing');if(e)e.remove();}
+
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function sendQ(el){document.getElementById('inp').value=el.textContent;sendMsg();}
+
+async function sendMsg(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();if(!text)return;
+  const cfg=getCfg();
+  if(!cfg?.key){openModal('cfg');return;}
+  inp.value='';autoResize(inp);
+  appendMsg('user',text);
+  history.push({role:'user',content:text});
+  document.getElementById('sendBtn').disabled=true;
+  showTyping();
+  const errEl=document.getElementById('chat-err');if(errEl)errEl.remove();
+  try{
+    const reply=await callAPI(cfg,history,SYS,1600);
+    removeTyping();
+    appendMsg('bot',reply);
+    history.push({role:'assistant',content:reply});
+    if(history.length>22)history=history.slice(-18);
+    parseStrategy(reply);
+  }catch(e){
+    removeTyping();
+    const wrap=document.getElementById('chatWrap');
+    const d=document.createElement('div');d.id='chat-err';d.className='error-inline';
+    d.textContent='出错：'+e.message+'。请检查 API Key 或网络，点击右上角设置重新配置。';
+    wrap.appendChild(d);wrap.scrollTop=wrap.scrollHeight;
+    updateDot(false);
+  }
+  document.getElementById('sendBtn').disabled=false;
+  inp.focus();
+}
+
+// ════════════════════════════════════════════════════════════
+//  TYPEWRITER
+// ════════════════════════════════════════════════════════════
+const QS=['「选择比努力更重要，但有得选的前提是足够努力。」','「别用战术上的勤奋，掩盖战略上的懒惰。」','「普通家庭的孩子，选错专业，可能影响十年。」','「你填的不只是志愿，更是未来的方向。」'];
+let qi=0,ci=0,tw=true;
+function typewriter(){
+  const el=document.getElementById('tagline');const q=QS[qi];
+  if(tw){el.textContent=q.slice(0,ci+1);ci++;if(ci>=q.length){tw=false;setTimeout(typewriter,2400);return;}setTimeout(typewriter,62);}
+  else{el.textContent=q.slice(0,ci-1);ci--;if(ci<=0){tw=true;qi=(qi+1)%QS.length;setTimeout(typewriter,400);}else setTimeout(typewriter,26);}
+}
+typewriter();
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  const cfg=getCfg();
+  updateDot(!!cfg?.key);
+  if(!cfg?.key)setTimeout(()=>openModal('cfg'),700);
+});
+</script>
+</body>
+</html>
